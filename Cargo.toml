@@ -98,3 +98,7 @@ lto = "thin"
 [profile.release-debug-info]
 inherits = "release"
 debug = true
+
+[[bin]]
+name = "i3status-rs-custom"
+path = "src/main.rs"
