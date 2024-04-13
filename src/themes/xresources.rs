@@ -44,4 +44,11 @@ mod tests {
             println!("{} = {:?}", name, value);
         }
     }
+
+    #[test]
+    fn test_deserializing_xcolors() {
+        use super::super::color::*;
+        println!("COLORS = {:?}", COLORS.keys());
+        let _: Color = "x:background".parse().expect("can parse background");
+    }
 }
