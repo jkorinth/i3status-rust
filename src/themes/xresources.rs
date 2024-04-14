@@ -2,7 +2,18 @@
 use log::*;
 use once_cell::sync::Lazy;
 use regex::Regex;
-use std::{collections::HashMap, env, fs::File, io::Read, path::PathBuf};
+use std::{collections::HashMap, env, path::PathBuf};
+
+#[cfg(not(test))]
+fn read_xresources() -> std::io::Result<String> {
+    let home = env::var("HOME").expect("HOME env var was not set?!");
+    let xresources = PathBuf::from(home + "/.Xresources");
+    debug!(".Xresources @ {:?}", xresources);
+    return std::fs::read_to_string(xresources);
+}
+
+#[cfg(test)]
+use tests::read_xresources;
 
 static COLOR_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^\s*\*(?<name>[^:]+)\s*:\s*(?<color>#[a-f0-9]{6}).*$").unwrap());
@@ -11,12 +22,7 @@ pub static COLORS: Lazy<HashMap<String, String>> = Lazy::new(|| {
     let home = env::var("HOME").expect("HOME env var was not set?!");
     let xresources = PathBuf::from(home + "/.Xresources");
     debug!(".Xresources @ {:?}", xresources);
-    if xresources.exists() {
-        let mut content: String = String::new();
-        File::open(xresources)
-            .expect("")
-            .read_to_string(&mut content)
-            .unwrap();
+    if let Ok(content) = read_xresources() {
         debug!(".Xresources content:\n{}", content);
         return HashMap::from_iter(
             content
@@ -36,10 +42,21 @@ pub static COLORS: Lazy<HashMap<String, String>> = Lazy::new(|| {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Result;
+
+    pub(crate) fn read_xresources() -> Result<String> {
+        static XRESOURCES: &str = "\
+        ! this is a comment\n\
+        \n\
+        *color4 : #feedda\n\
+    \n\
+        *background: #ee33aa\n\
+        ";
+        Ok(XRESOURCES.to_string())
+    }
 
     #[test]
     fn test_reading_colors() {
-        env_logger::init();
         for (name, value) in COLORS.iter() {
             println!("{} = {:?}", name, value);
         }
