@@ -218,7 +218,11 @@ impl FromStr for Color {
             Color::Hsva(Hsva::new(h, s / 100., v / 100., (a / 100. * 255.) as u8))
         } else if color.starts_with("x:") {
             let name = color.split_at(2).1;
-            let hex = super::xresources::COLORS.get(name)
+            let colors = super::xresources::COLORS
+                .as_ref()
+                .or_error(|| format!("error reading ~/.Xresources"))?;
+            let hex = colors
+                .get(name)
                 .or_error(|| format!("color '{name}' is not defined in .Xresources"))?;
             let err_msg = || format!("'{name}' def '{hex}' cannot be parsed as RGB");
             let rgb = hex.get(1..7).or_error(err_msg)?;

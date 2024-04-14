@@ -9,34 +9,34 @@ fn read_xresources() -> std::io::Result<String> {
     let home = env::var("HOME").expect("HOME env var was not set?!");
     let xresources = PathBuf::from(home + "/.Xresources");
     debug!(".Xresources @ {:?}", xresources);
-    return std::fs::read_to_string(xresources);
+    std::fs::read_to_string(xresources)
 }
 
 #[cfg(test)]
 use tests::read_xresources;
 
 static COLOR_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"^\s*\*(?<name>[^:]+)\s*:\s*(?<color>#[a-f0-9]{6}).*$").unwrap());
+    Lazy::new(|| Regex::new(r"^\s*\*(?<name>[^: ]+)\s*:\s*(?<color>#[a-f0-9]{6}).*$").unwrap());
 
-pub static COLORS: Lazy<HashMap<String, String>> = Lazy::new(|| {
-    let home = env::var("HOME").expect("HOME env var was not set?!");
+pub static COLORS: Lazy<Result<HashMap<String, String>, env::VarError>> = Lazy::new(|| {
+    let home = env::var("HOME")?;
     let xresources = PathBuf::from(home + "/.Xresources");
     debug!(".Xresources @ {:?}", xresources);
     if let Ok(content) = read_xresources() {
         debug!(".Xresources content:\n{}", content);
-        return HashMap::from_iter(
+        return Ok(HashMap::from_iter(
             content
-                .split("\n")
+                .lines()
                 .map(|line| {
                     COLOR_REGEX
                         .captures(line)
                         .map(|caps| (caps["name"].to_string(), caps["color"].to_string()))
                 })
                 .flatten(),
-        );
+        ));
     }
     warn!(".Xresources not found");
-    HashMap::new()
+    Ok(HashMap::new())
 });
 
 #[cfg(test)]
@@ -57,15 +57,19 @@ mod tests {
 
     #[test]
     fn test_reading_colors() {
-        for (name, value) in COLORS.iter() {
+        let colors = COLORS.as_ref().unwrap();
+        for (name, value) in colors.iter() {
             println!("{} = {:?}", name, value);
         }
+        assert!(colors.contains_key("color4"));
+        assert!(colors.contains_key("background"));
+        assert_eq!(2, colors.len());
     }
 
     #[test]
     fn test_deserializing_xcolors() {
         use super::super::color::*;
-        println!("COLORS = {:?}", COLORS.keys());
+        println!("COLORS = {:?}", COLORS.as_ref().unwrap().keys());
         let _: Color = "x:background".parse().expect("can parse background");
     }
 }
