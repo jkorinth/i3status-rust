@@ -2,11 +2,16 @@
 use log::*;
 use once_cell::sync::Lazy;
 use regex::Regex;
-use std::{collections::HashMap, env, path::PathBuf};
+use std::collections::HashMap;
+
+#[cfg(not(test))]
+use std::{env, path::PathBuf};
 
 #[cfg(not(test))]
 fn read_xresources() -> std::io::Result<String> {
-    let home = env::var("HOME").expect("HOME env var was not set?!");
+    use std::io::{Error, ErrorKind};
+    let home = env::var("HOME")
+        .map_err(|_| Error::new(ErrorKind::Other, "HOME env var was not set"))?;
     let xresources = PathBuf::from(home + "/.Xresources");
     debug!(".Xresources @ {:?}", xresources);
     std::fs::read_to_string(xresources)
@@ -18,26 +23,27 @@ use tests::read_xresources;
 static COLOR_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^\s*\*(?<name>[^: ]+)\s*:\s*(?<color>#[a-f0-9]{6}).*$").unwrap());
 
-pub static COLORS: Lazy<Result<HashMap<String, String>, env::VarError>> = Lazy::new(|| {
-    let home = env::var("HOME")?;
-    let xresources = PathBuf::from(home + "/.Xresources");
-    debug!(".Xresources @ {:?}", xresources);
-    if let Ok(content) = read_xresources() {
-        debug!(".Xresources content:\n{}", content);
-        return Ok(HashMap::from_iter(
-            content
-                .lines()
-                .map(|line| {
-                    COLOR_REGEX
-                        .captures(line)
-                        .map(|caps| (caps["name"].to_string(), caps["color"].to_string()))
-                })
-                .flatten(),
-        ));
-    }
-    warn!(".Xresources not found");
-    Ok(HashMap::new())
-});
+static COLORS: Lazy<Result<HashMap<String, String>, String>> =
+    Lazy::new(|| match read_xresources() {
+        Ok(content) => {
+            debug!(".Xresources content:\n{}", content);
+            return Ok(HashMap::from_iter(
+                content
+                    .lines()
+                    .map(|line| {
+                        COLOR_REGEX
+                            .captures(line)
+                            .map(|caps| (caps["name"].to_string(), caps["color"].to_string()))
+                    })
+                    .flatten(),
+            ));
+        }
+        Err(e) => Err(format!("could not read .Xresources: {}", e)),
+    });
+
+pub fn get_color(name: &str) -> Result<Option<&String>, String> {
+    Ok(COLORS.as_ref().map(|cmap| cmap.get(name))?)
+}
 
 #[cfg(test)]
 mod tests {

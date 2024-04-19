@@ -218,19 +218,20 @@ impl FromStr for Color {
             Color::Hsva(Hsva::new(h, s / 100., v / 100., (a / 100. * 255.) as u8))
         } else if color.starts_with("x:") {
             let name = color.split_at(2).1;
-            let colors = super::xresources::COLORS
-                .as_ref()
-                .or_error(|| format!("error reading ~/.Xresources"))?;
-            let hex = colors
-                .get(name)
-                .or_error(|| format!("color '{name}' is not defined in .Xresources"))?;
+            let hex = super::xresources::get_color(name)
+                .map_err(|e| Self::Err::new(e))?
+                .ok_or_else(|| {
+                    Self::Err::new(format!("color {} not defined in ~/.Xresources", name))
+                })?;
             let err_msg = || format!("'{name}' def '{hex}' cannot be parsed as RGB");
-            let rgb = hex.get(1..7).or_error(err_msg)?;
-            let a = hex.get(7..9).unwrap_or("FF");
-            Color::Rgba(Rgba::from_hex(
-                (u32::from_str_radix(rgb, 16).or_error(err_msg)? << 8)
-                    + u32::from_str_radix(a, 16).or_error(err_msg)?,
-            ))
+            let rgb = hex
+                .get(1..7)
+                .map(|rgb| u32::from_str_radix(rgb, 16).ok())
+                .flatten();
+            let a = u32::from_str_radix(hex.get(7..9).unwrap_or("FF"), 16).ok();
+            rgb.map(|rgb| a.map(|a| Color::Rgba(Rgba::from_hex((rgb << 8) + a))))
+                .flatten()
+                .or_error(err_msg)?
         } else {
             let err_msg = || format!("'{color}' is not a valid RGBA color");
             let rgb = color.get(1..7).or_error(err_msg)?;
