@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use log::*;
+use log::debug;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::HashMap;
@@ -10,8 +10,8 @@ use std::{env, path::PathBuf};
 #[cfg(not(test))]
 fn read_xresources() -> std::io::Result<String> {
     use std::io::{Error, ErrorKind};
-    let home = env::var("HOME")
-        .map_err(|_| Error::new(ErrorKind::Other, "HOME env var was not set"))?;
+    let home =
+        env::var("HOME").map_err(|_| Error::new(ErrorKind::Other, "HOME env var was not set"))?;
     let xresources = PathBuf::from(home + "/.Xresources");
     debug!(".Xresources @ {:?}", xresources);
     std::fs::read_to_string(xresources)
@@ -64,11 +64,8 @@ mod tests {
     #[test]
     fn test_reading_colors() {
         let colors = COLORS.as_ref().unwrap();
-        for (name, value) in colors.iter() {
-            println!("{} = {:?}", name, value);
-        }
-        assert!(colors.contains_key("color4"));
-        assert!(colors.contains_key("background"));
+        assert_eq!(colors.get("color4"), Some(&"#feedda".to_string()));
+        assert_eq!(colors.get("background"), Some(&"#ee33aa".to_string()));
         assert_eq!(2, colors.len());
     }
 
@@ -76,6 +73,31 @@ mod tests {
     fn test_deserializing_xcolors() {
         use super::super::color::*;
         println!("COLORS = {:?}", COLORS.as_ref().unwrap().keys());
-        let _: Color = "x:background".parse().expect("can parse background");
+        let mut parsed_color = "x:color4".parse::<Color>();
+        assert!(parsed_color.is_ok());
+        if let Ok(c) = parsed_color {
+            assert_eq!(
+                c,
+                Color::Rgba(Rgba {
+                    r: 254,
+                    g: 237,
+                    b: 218,
+                    a: 255
+                })
+            );
+        }
+        parsed_color = "x:background".parse::<Color>();
+        assert!(parsed_color.is_ok());
+        if let Ok(c) = parsed_color {
+            assert_eq!(
+                c,
+                Color::Rgba(Rgba {
+                    r: 238,
+                    g: 51,
+                    b: 170,
+                    a: 255
+                })
+            );
+        }
     }
 }
