@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use log::debug;
 use once_cell::sync::Lazy;
 use regex::Regex;
