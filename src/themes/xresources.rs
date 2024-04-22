@@ -71,7 +71,6 @@ mod tests {
     #[test]
     fn test_deserializing_xcolors() {
         use super::super::color::*;
-        println!("COLORS = {:?}", COLORS.as_ref().unwrap().keys());
         let mut parsed_color = "x:color4".parse::<Color>();
         assert!(parsed_color.is_ok());
         if let Ok(c) = parsed_color {
