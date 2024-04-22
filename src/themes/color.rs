@@ -219,9 +219,7 @@ impl FromStr for Color {
         } else if color.starts_with("x:") {
             let name = color.split_at(2).1;
             let hex = super::xresources::get_color(name)?
-                .ok_or_else(|| {
-                    Self::Err::new(format!("color {} not defined in ~/.Xresources", name))
-                })?;
+                .or_error(|| format!("color {name} not defined in ~/.Xresources"))?;
             let err_msg = || format!("'{name}' def '{hex}' cannot be parsed as RGB");
             let rgb = hex
                 .get(1..7)
