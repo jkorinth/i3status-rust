@@ -2,6 +2,7 @@ use log::debug;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::HashMap;
+use crate::errors::Error;
 
 #[cfg(not(test))]
 use std::{env, path::PathBuf};
@@ -22,7 +23,7 @@ use tests::read_xresources;
 static COLOR_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^\s*\*(?<name>[^: ]+)\s*:\s*(?<color>#[a-f0-9]{6}).*$").unwrap());
 
-static COLORS: Lazy<Result<HashMap<String, String>, String>> =
+static COLORS: Lazy<Result<HashMap<String, String>, Error>> =
     Lazy::new(|| match read_xresources() {
         Ok(content) => {
             debug!(".Xresources content:\n{}", content);
@@ -37,11 +38,11 @@ static COLORS: Lazy<Result<HashMap<String, String>, String>> =
                     .flatten(),
             ));
         }
-        Err(e) => Err(format!("could not read .Xresources: {}", e)),
+        Err(e) => Err(Error::new(format!("could not read .Xresources: {}", e))),
     });
 
-pub fn get_color(name: &str) -> Result<Option<&String>, String> {
-    Ok(COLORS.as_ref().map(|cmap| cmap.get(name))?)
+pub fn get_color(name: &str) -> Result<Option<&String>, Error> {
+    Ok(COLORS.as_ref().map(|cmap| cmap.get(name)).map_err(Clone::clone)?)
 }
 
 #[cfg(test)]

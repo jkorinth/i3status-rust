@@ -218,8 +218,7 @@ impl FromStr for Color {
             Color::Hsva(Hsva::new(h, s / 100., v / 100., (a / 100. * 255.) as u8))
         } else if color.starts_with("x:") {
             let name = color.split_at(2).1;
-            let hex = super::xresources::get_color(name)
-                .map_err(|e| Self::Err::new(e))?
+            let hex = super::xresources::get_color(name)?
                 .ok_or_else(|| {
                     Self::Err::new(format!("color {} not defined in ~/.Xresources", name))
                 })?;
