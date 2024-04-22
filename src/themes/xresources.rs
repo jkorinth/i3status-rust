@@ -71,31 +71,25 @@ mod tests {
     #[test]
     fn test_deserializing_xcolors() {
         use super::super::color::*;
-        let mut parsed_color = "x:color4".parse::<Color>();
-        assert!(parsed_color.is_ok());
-        if let Ok(c) = parsed_color {
-            assert_eq!(
-                c,
-                Color::Rgba(Rgba {
-                    r: 254,
-                    g: 237,
-                    b: 218,
-                    a: 255
-                })
-            );
-        }
-        parsed_color = "x:background".parse::<Color>();
-        assert!(parsed_color.is_ok());
-        if let Ok(c) = parsed_color {
-            assert_eq!(
-                c,
-                Color::Rgba(Rgba {
-                    r: 238,
-                    g: 51,
-                    b: 170,
-                    a: 255
-                })
-            );
-        }
+        let mut parsed_color = "x:color4".parse::<Color>().unwrap();
+        assert_eq!(
+            parsed_color,
+            Color::Rgba(Rgba {
+                r: 254,
+                g: 237,
+                b: 218,
+                a: 255
+            })
+        );
+        parsed_color = "x:background".parse::<Color>().unwrap();
+        assert_eq!(
+            parsed_color,
+            Color::Rgba(Rgba {
+                r: 238,
+                g: 51,
+                b: 170,
+                a: 255
+            })
+        );
     }
 }
