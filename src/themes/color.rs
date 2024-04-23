@@ -223,11 +223,9 @@ impl FromStr for Color {
             let err_msg = || format!("'{name}' def '{hex}' cannot be parsed as RGB");
             let rgb = hex
                 .get(1..7)
-                .map(|rgb| u32::from_str_radix(rgb, 16).ok())
-                .flatten();
+                .and_then(|rgb| u32::from_str_radix(rgb, 16).ok());
             let a = u32::from_str_radix(hex.get(7..9).unwrap_or("FF"), 16).ok();
-            rgb.map(|rgb| a.map(|a| Color::Rgba(Rgba::from_hex((rgb << 8) + a))))
-                .flatten()
+            rgb.and_then(|rgb| a.map(|a| Color::Rgba(Rgba::from_hex((rgb << 8) + a))))
                 .or_error(err_msg)?
         } else {
             let err_msg = || format!("'{color}' is not a valid RGBA color");
