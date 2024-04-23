@@ -220,13 +220,9 @@ impl FromStr for Color {
             let name = color.split_at(2).1;
             let hex = super::xresources::get_color(name)?
                 .or_error(|| format!("color {name} not defined in ~/.Xresources"))?;
-            let err_msg = || format!("'{name}' def '{hex}' cannot be parsed as RGB");
-            let rgb = hex
-                .get(1..7)
-                .and_then(|rgb| u32::from_str_radix(rgb, 16).ok());
-            let a = u32::from_str_radix(hex.get(7..9).unwrap_or("FF"), 16).ok();
-            rgb.and_then(|rgb| a.map(|a| Color::Rgba(Rgba::from_hex((rgb << 8) + a))))
-                .or_error(err_msg)?
+            Color::Rgba(Rgba::from_hex(u32::from_str_radix(hex, 16).or_error(
+                || format!("color definition '{}' cannot be parsed", hex),
+            )?))
         } else {
             let err_msg = || format!("'{color}' is not a valid RGBA color");
             let rgb = color.get(1..7).or_error(err_msg)?;

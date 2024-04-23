@@ -20,17 +20,26 @@ fn read_xresources() -> std::io::Result<String> {
 #[cfg(test)]
 use tests::read_xresources;
 
-static COLOR_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"^\s*\*(?<name>[^: ]+)\s*:\s*(?<color>#[a-f0-9]{6}).*$").unwrap());
+static COLOR_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^\s*\*(?<name>[^: ]+)\s*:\s*#(?<color>[a-f0-9]{6})(?<alpha>[a-f0-9]{2})?.*$")
+        .unwrap()
+});
 
 static COLORS: Lazy<Result<HashMap<String, String>, Error>> =
     Lazy::new(|| match read_xresources() {
         Ok(content) => {
             debug!(".Xresources content:\n{}", content);
             return Ok(HashMap::from_iter(content.lines().filter_map(|line| {
-                COLOR_REGEX
-                    .captures(line)
-                    .map(|caps| (caps["name"].to_string(), caps["color"].to_string()))
+                COLOR_REGEX.captures(line).map(|caps| {
+                    (
+                        caps["name"].to_string(),
+                        format!(
+                            "{}{}",
+                            &caps["color"],
+                            caps.name("alpha").map(|a| a.as_str()).unwrap_or("ff")
+                        ),
+                    )
+                })
             })));
         }
         Err(e) => Err(Error::new(format!("could not read .Xresources: {}", e))),
@@ -54,7 +63,7 @@ mod tests {
         \n\
         *color4 : #feedda\n\
     \n\
-        *background: #ee33aa\n\
+        *background: #ee33aa99\n\
         ";
         Ok(XRESOURCES.to_string())
     }
@@ -62,8 +71,8 @@ mod tests {
     #[test]
     fn test_reading_colors() {
         let colors = COLORS.as_ref().unwrap();
-        assert_eq!(colors.get("color4"), Some(&"#feedda".to_string()));
-        assert_eq!(colors.get("background"), Some(&"#ee33aa".to_string()));
+        assert_eq!(colors.get("color4"), Some(&"feeddaff".to_string()));
+        assert_eq!(colors.get("background"), Some(&"ee33aa99".to_string()));
         assert_eq!(2, colors.len());
     }
 
@@ -87,7 +96,7 @@ mod tests {
                 r: 238,
                 g: 51,
                 b: 170,
-                a: 255
+                a: 153,
             })
         );
     }
