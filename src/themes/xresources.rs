@@ -21,7 +21,7 @@ fn read_xresources() -> std::io::Result<String> {
 use tests::read_xresources;
 
 static COLOR_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"^\s*\*(?<name>[^: ]+)\s*:\s*#(?<color>[a-f0-9]{6})(?<alpha>[a-f0-9]{2})?.*$")
+    Regex::new(r"^\s*\*(?<name>[^: ]+)\s*:\s*#(?<color>[a-f0-9]{6,8}).*$")
         .unwrap()
 });
 
