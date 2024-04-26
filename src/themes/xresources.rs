@@ -27,11 +27,11 @@ static COLORS: Lazy<Result<HashMap<String, String>, Error>> =
     Lazy::new(|| match read_xresources() {
         Ok(content) => {
             debug!(".Xresources content:\n{}", content);
-            return Ok(HashMap::from_iter(content.lines().filter_map(|line| {
+            Ok(HashMap::from_iter(content.lines().filter_map(|line| {
                 COLOR_REGEX
                     .captures(line)
                     .map(|caps| (caps["name"].to_string(), caps["color"].to_string()))
-            })));
+            })))
         }
         Err(e) => Err(Error::new(format!("could not read .Xresources: {}", e))),
     });
